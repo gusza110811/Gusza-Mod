@@ -3,7 +3,9 @@
 
 import pygame
 import types
-from multiprocessing import Process
+import os
+import threading
+
 
 class vector:
     """Base class for 2 dimensional position and scale"""
@@ -103,57 +105,65 @@ class base:
                 self.position.y -= 2
             else:
                 self.position.y += 2
-
-class game:
-    """Function and other things related to the main game"""
-
-    active_sprites:list[sprite] = []
-    """Sprites currently on the level"""
-
-    def kill(spriteID):
-        game.active_sprites[spriteID] = nil
-
-    def update(events):
-
-        for item in game.active_sprites:
-            currentsprite = item
-
-            currentsprite.Update()
-        
-        while game.active_sprites[-1] is nil:
-            game.active_sprites.pop()
-
-        return
-
-    def begin():
-        game.active_sprites.append(base.player())
-        game.active_sprites.append(base.follower())
-        game.active_sprites.append(base.follower())
-        game.kill(2)
-
-        return
     
 
 class commandterminal:
+    """Command terminal"""
     def main():
-        print(">------------------------<")
+        print(">========================<")
         print(">----Command terminal----<")
         print(">Enter command to execute<")
-        command = input(">")
+        print(">========================<")
+
+        while engine.running:
+            command = input(">")
+            commandfunction = command.split()[0]
+            commandarg = command.split()[1:]
+
+            if commandfunction == "help": 
+                print("quit:\n  Quit the game\nlist:\n  List all active sprite\nkill {sprite ID}:\n Delete a sprite\nsummon {sprite type} [position x] [position y]:\n  Spawn a new sprite in a specific location")
+            elif commandfunction == "quit": engine.running = False
+            elif commandfunction == "list": commandterminal.listsprites()
+            elif commandfunction == "kill": commandterminal.kill(commandarg[0])
+            elif commandfunction == "summon": commandterminal.summon(commandarg)
+
+        return
+    
+    def listsprites():
+        for idx, item in enumerate(game.active_sprites):
+            if item is nil: continue
+            print(f"{idx}: {type(item).__name__}")
+        
+
+    def summon(args:str):
+
+        name = eval(args[0])
+
+        try:
+            x = args[1]
+        except IndexError:
+            x = 0
+        try:
+            y = args[2]
+        except IndexError:
+            y = 0
+
+        game.active_sprites.append(name(x=x,y=x))
+    
+    def kill(spriteID):
+        game.active_sprites[spriteID] = nil
+
 
 class engine:
     """Function and other things not related to the main game"""
 
-    pygame.init()
-    screen = pygame.display.set_mode(viewport.size)
-    clock = pygame.time.Clock()
-    running = True
+    screen:pygame.surface
+    clock:pygame.time.Clock
+    running = False
+    font_title:pygame.font.Font
+    
 
-    def main():
-
-        
-        game.begin()
-
+    def loop():
         while engine.running:
             engine.screen.fill(pygame.Color(64,128,200))
             events = pygame.event.get()
@@ -169,6 +179,20 @@ class engine:
             pygame.display.flip()
             engine.clock.tick(30)
 
+    def main():
+        pygame.init()
+
+        engine.screen = pygame.display.set_mode(viewport.size)
+        engine.clock = pygame.time.Clock()
+        engine.running = True
+        engine.font_title = pygame.font.Font(size=64)
+
+        engine.running = True
+
+        game.begin()
+
+        engine.loop()
+
         return
     
     def render():
@@ -180,7 +204,41 @@ class engine:
             engine.screen.blit(rendersprite.sprite,position)
         return
 
+class game:
+    """Function and other things related to the main game"""
+
+    active_sprites:list[sprite] = []
+    """Sprites currently on the level"""
+
+    def update(events):
+
+        for item in game.active_sprites:
+            currentsprite = item
+
+            currentsprite.Update()
+        
+        if len(game.active_sprites) != 0:
+            while game.active_sprites[-1] is nil:
+                game.active_sprites.pop()
+
+        return
+
+    def begin():
+        game.active_sprites.append(base.player())
+        game.active_sprites.append(base.follower())
+
+        return
+
 
 if __name__ == "__main__":
+    os.system("cls")
+
+    gameprocess = threading.Thread(target=engine.main,name="Game")
+    gameprocess.start()
+
+    while not engine.running:
+        pass
+
+    # Debug menu / Command Terminal
     print('Copyright (C) 2025  Sarunphat "Gusza" Nimsuntorn')
-    engine.main()
+    commandterminal.main()
