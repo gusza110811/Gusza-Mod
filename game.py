@@ -111,7 +111,7 @@ class commandterminal:
     """Command terminal"""
     def main():
         print(">========================<")
-        print(">----Command terminal----<")
+        print(">    COMMAND TERMINAL    <")
         print(">Enter command to execute<")
         print(">========================<")
 
