@@ -116,16 +116,23 @@ class commandterminal:
         print(">========================<")
 
         while engine.running:
-            command = input(">")
-            commandfunction = command.split()[0]
+            command = (input(">")).lower()
+            try:
+                commandfunction = command.split()[0]
+            except IndexError:
+                continue
             commandarg = command.split()[1:]
 
-            if commandfunction == "help": 
-                print("quit:\n  Quit the game\nlist:\n  List all active sprite\nkill {sprite ID}:\n Delete a sprite\nsummon {sprite type} [position x] [position y]:\n  Spawn a new sprite in a specific location")
-            elif commandfunction == "quit": engine.running = False
-            elif commandfunction == "list": commandterminal.listsprites()
-            elif commandfunction == "kill": commandterminal.kill(commandarg[0])
-            elif commandfunction == "summon": commandterminal.summon(commandarg)
+            try:
+                if commandfunction == "help": 
+                    print("quit:\n  Quit the game\nlist:\n  List all active sprite\nkill {sprite ID}:\n Delete a sprite\nsummon {sprite type} [position x] [position y]:\n  Spawn a new sprite in a specific location")
+                elif commandfunction == "quit": engine.running = False
+                elif commandfunction == "list": commandterminal.listsprites()
+                elif commandfunction == "kill": commandterminal.kill(commandarg[0])
+                elif commandfunction == "summon": commandterminal.summon(commandarg)
+            except Exception as E:
+                print(f"Failed to execute command `{command}`")
+                print(E)
 
         return
     
@@ -135,22 +142,30 @@ class commandterminal:
             print(f"{idx}: {type(item).__name__}")
         
 
-    def summon(args:str):
-
-        name = eval(args[0])
+    def summon(args:list[str]):
+        try:
+            name = eval(args[0])
+        except NameError as N:
+            print("Invalid sprite name: " + args[0])
+            return
 
         try:
-            x = args[1]
+            x = int(args[1])
         except IndexError:
             x = 0
         try:
-            y = args[2]
+            y = int(args[2])
         except IndexError:
             y = 0
+
+        print(f"{(name.__name__).capitalize()} summoned at {x},{y}")
 
         game.active_sprites.append(name(x=x,y=x))
     
     def kill(spriteID):
+        spriteID = int(spriteID)
+
+        print(f"Sprite {type(game.active_sprites[spriteID]).__name__} (ID: {spriteID}) has been removed")
         game.active_sprites[spriteID] = nil
 
 
