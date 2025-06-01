@@ -184,11 +184,13 @@ class game:
         if game.timetilphysic <= 0:
             game.callphysic()
             game.timetilphysic = game.physicupdate
+        else:
+            game.timetilphysic -= 1
 
         return
     
     def callphysic():
-        physicqueue = filter(lambda a: issubclass(type(a),physicSprite),game.active_sprites)
+        physicqueue:list[physicSprite] = filter(lambda a: issubclass(type(a),physicSprite),game.active_sprites)
         
         for physicobject in physicqueue:
             physicobject.physicCall()

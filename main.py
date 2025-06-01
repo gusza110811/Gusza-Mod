@@ -3,17 +3,16 @@
 
 import pygame
 import types
-import os, sys
+from compat_fix import *
 import threading
 
 from vector import *
 
 from engine import *
-    
 
 
 if __name__ == "__main__":
-    os.system("cls")
+    clear()
     print('Copyright (C) 2025  Sarunphat "Gusza" Nimsuntorn\n\n')
 
     engine.main()
