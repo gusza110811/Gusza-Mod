@@ -1,13 +1,7 @@
 # Copyright (C) 2025  Sarunphat "Gusza" Nimsuntorn
 # See C.txt
 
-import pygame
-import types
 from compat_fix import *
-import threading
-
-from vector import *
-
 from engine import *
 
 

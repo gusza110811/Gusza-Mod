@@ -26,7 +26,7 @@ class engine:
                 if event.type == pygame.QUIT:
                     engine.running = False
             
-            game.update(events)
+            viewport.position = game.update(viewport.position,events)
 
             engine.render()
 

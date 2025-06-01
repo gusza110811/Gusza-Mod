@@ -1,6 +1,6 @@
 import pygame
 import types
-
+import random
 
 from vector import *
 
@@ -15,7 +15,7 @@ class commands:
 
     def summon(name):
 
-        print(f"{(type(name).__name__).capitalize()} summoned at {name.position.x},{name.position.y}")
+        print(f"{(type(name).__name__)} summoned at {name.position.x},{name.position.y}")
 
         game.active_sprites.append(name)
     
@@ -51,17 +51,26 @@ class sprite:
 
 class physicSprite(sprite):
     """Base sprite for physic-based objects in the game"""
-    def __init__(self, spritedir = "Defaults/MissingTexture", OnCreate=None, OnUpdate=None, x = 0, y = 0, OnPhysic=None, collide=True, xgravity=0, ygravity=0, initvx=0,initvy=0, friction=0.1):
+    def __init__(self, spritedir = "Defaults/MissingTexture", OnCreate=None, OnUpdate=None, x = 0, y = 0, OnPhysic=None, collide=True, xgravity=0, ygravity=0, initvx=0,initvy=0, friction=0.1, clipstrength=0.0001):
         super().__init__(spritedir, OnCreate, OnUpdate, x, y)
 
         if OnPhysic:
-            self.onPhysicCall = OnPhysic
+            self.onPhysicCall = types.MethodType(OnPhysic,self)
 
         self.collide = collide
         self.gravity = vector(xgravity,ygravity)
         self.velocity = vector(initvx,initvy)
         self.friction = vector(friction,friction)
         self.hitdetector = self.sprite.get_rect(topleft=(x, y))
+        self.cliptime = 0
+        self.tolerance = 10**-4 # not intended for modders use
+        self.clipstrength = clipstrength
+    
+    def isClipping(self):
+        def getrand(): return (random.choice([-self.cliptime,self.cliptime]))
+        self.position += vector(getrand(),getrand())
+        self.cliptime += self.clipstrength
+        return
 
     def collide_with(self, other):
         """Check collision with another sprite"""
@@ -72,11 +81,11 @@ class physicSprite(sprite):
 
     def physicCall(self):
 
+        self.onPhysicCall()
+
         # Handle Collision with other physics objects
         if self.collide:
             self.collision()
-        
-        self.onPhysicCall()
 
         # Apply physics updates
         self.position += self.velocity
@@ -85,17 +94,32 @@ class physicSprite(sprite):
 
         # Update hitbox position
         self.hitdetector.topleft = (self.position.x, self.position.y)
-
-        
     
-    def collision(self):
+    def isColliding(self):
+        objs = []
         for obj in game.active_sprites:
-            if obj is self or not isinstance(obj, physicSprite) or not obj.collide:
+            if (obj is self) or (not isinstance(obj, physicSprite)) or (not obj.collide):
                 continue
             
             if self.collide_with(obj):
-                # Simple collision response: Move back
+                objs.append(obj)
+        return objs
+
+    def collision(self):
+        for obj in game.active_sprites:
+            if (obj is self) or (not isinstance(obj, physicSprite)) or (not obj.collide):
+                continue
+            
+            if self.collide_with(obj):
+                # Bounce back
                 self.position -= self.velocity
+
+                if (abs(self.velocity.x) <= self.tolerance) and (abs(self.velocity.y) <= self.tolerance):
+                    self.isClipping()
+                    self.hitdetector.topleft = (self.position.x, self.position.y)  # Reset hitbox position
+                    continue
+                elif self.cliptime > 0:
+                    self.cliptime -= self.clipstrength/2
 
                 if self.hitdetector.midtop[1] > obj.hitdetector.midtop[1]:
                     self.velocity.y *= -1
@@ -110,31 +134,47 @@ class physicSprite(sprite):
 
                 self.hitdetector.topleft = (self.position.x, self.position.y)  # Reset hitbox position
 
-
-
 class nil:
     """A placeholder 'sprite' that replace a deleted sprite and only removed from the list when its the last sprite so other sprite's ID doesnt change"""
     def update():
         return
 
 class base:
-    """Class containing every default pre-made sprite presets"""
+    """Class containing default sprites"""
 
-    class player(physicSprite):
+    class player(sprite):
         def __init__(self, spritedir="Defaults/DefaultPlayer", OnCreate=None, OnUpdate=None, x=0, y=0, OnPhysic=None, collide=True, xgravity=0, ygravity=0, initvx=0, initvy=0, friction=0.5):
 
-            def movement():
+            def movement(self):
                 keypressed = pygame.key.get_pressed()
                 if keypressed[pygame.K_a]:
-                    self.velocity.x -=5
+                    self.position.x -=5
                 if keypressed[pygame.K_d]:
-                    self.velocity.x +=5
+                    self.position.x +=5
                 if keypressed[pygame.K_w]:
-                    self.velocity.y -=5
+                    self.position.y -=5
                 if keypressed[pygame.K_s]:
-                    self.velocity.y +=5
+                    self.position.y +=5
 
-            super().__init__(spritedir, OnCreate, OnUpdate, x, y, movement, collide, xgravity, ygravity, initvx, initvy, friction)
+            super().__init__(spritedir, OnCreate, movement, x, y)
+
+
+    class physicPlayer(physicSprite):
+        def __init__(self, spritedir="Defaults/DefaultPlayer", OnCreate=None, OnUpdate=None, x=0, y=0, OnPhysic=None, collide=True, xgravity=0, ygravity=0, initvx=0, initvy=0, friction=0.5,clipstrength=1):
+
+            def movement(self:physicSprite):
+                keypressed = pygame.key.get_pressed()
+                if len(self.isColliding()) == 0:
+                    if keypressed[pygame.K_a]:
+                        self.velocity.x -=5
+                    if keypressed[pygame.K_d]:
+                        self.velocity.x +=5
+                    if keypressed[pygame.K_w]:
+                        self.velocity.y -=5
+                    if keypressed[pygame.K_s]:
+                        self.velocity.y +=5
+
+            super().__init__(spritedir, OnCreate, OnUpdate, x, y, movement, collide, xgravity, ygravity, initvx, initvy, friction,clipstrength)
 
     class follower(sprite):
         """Basic Character that can be used for enemy characters but there is no health system in the base game"""
@@ -144,7 +184,7 @@ class base:
         def update(self):
 
             try:
-                player = next(filter(lambda a: type(a) is base.player,game.active_sprites))
+                player = next(filter(lambda a: (type(a) is base.physicPlayer) or (type(a) is base.player),game.active_sprites))
             except StopIteration:
                 return
             
@@ -157,7 +197,10 @@ class base:
                 self.position.y -= 2
             else:
                 self.position.y += 2
-    
+
+
+
+
 
 class game:
     """Function and other things related to the main game"""
@@ -166,11 +209,11 @@ class game:
     """Sprites currently on the level"""
 
     physicupdate = 0
-    """Delay between each time physics function is called. 0 means physic updates every frame"""
+    """Delay between each time physics function is called. 0means physic updates every frame"""
 
     timetilphysic = physicupdate
 
-    def update(events):
+    def update(viewport:int,events:list[pygame.event.Event]):
 
         for item in game.active_sprites:
             currentsprite = item
@@ -187,7 +230,7 @@ class game:
         else:
             game.timetilphysic -= 1
 
-        return
+        return viewport
     
     def callphysic():
         physicqueue:list[physicSprite] = filter(lambda a: issubclass(type(a),physicSprite),game.active_sprites)
@@ -198,9 +241,12 @@ class game:
         return
 
     def begin():
-        commands.summon(base.player(y=-50,collide=False))
+        commands.summon(base.physicPlayer())
 
-        commands.summon(physicSprite(x=0,y=50,initvx=1,friction=0))
-        commands.summon(physicSprite(x=100,y=50,friction=0))
+        commands.summon(physicSprite(x=0,y=100,initvx=1,friction=0))
+        commands.summon(physicSprite(x=100,y=100,friction=0))
+
+        commands.summon(physicSprite(x=0,y=-100,initvx=1,friction=0))
+        commands.summon(physicSprite(x=100,y=-100,friction=0))
 
         return

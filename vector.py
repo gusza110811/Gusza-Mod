@@ -1,7 +1,7 @@
 class vector:
     """Base class for 2 dimensional position and scale"""
 
-    def __init__(self,x,y):
+    def __init__(self,x,y=0):
         self.x=x
         self.y=y
     
