@@ -3,8 +3,11 @@ from vector import vector
 import pygame
 import random
 
-class data:
-    active_sprites = []
+class sync:
+    localdata:object
+    @staticmethod
+    def sync(data):
+        sync.localdata = data
 
 class sprite:
     """Base Sprite for every objects in the game"""
@@ -23,20 +26,46 @@ class sprite:
         
         if OnUpdate:
             self.update = types.MethodType(OnUpdate,self)
+
+        self.tags = []
+        self.attributes = {}
     
+    def hasTag(self,tag):
+        "Return True if this sprite as {tag}"
+        return tag in self.tags
+    
+    def addTag(self,tag):
+        "Add {tag} to this sprite"
+        self.tags.append(tag)
+    
+    def getAttribute(self,attr):
+        "Get value of {attr}, return None if {attr} does not exist"
+        try:
+            return self.attributes[attr]
+        except KeyError:
+            return None
+
+    def setAttribute(self,attr,value):
+        "Set {attr} to {value}"
+        self.attributes[attr] = value
+    def addAttribute(self,attr): "Equivalent to setAttribute({attr},None)"
+
     def created(self):
         return
     
     def update(self):
         return
 
+
 class physicSprite(sprite):
     """Base sprite for physic-based objects in the game"""
-    def __init__(self, spritedir = "Defaults/MissingTexture", OnCreate=None, OnUpdate=None, x = 0, y = 0, OnPhysic=None, collide=True, xgravity=0, ygravity=0, initvx=0,initvy=0, friction=0.1, clipstrength=0.0001, static=False):
+    def __init__(self, spritedir = "Defaults/MissingTexture", OnCreate=None, OnUpdate=None, x = 0, y = 0, OnPhysic=None, OnCollide=None, collide=True, xgravity=0, ygravity=0, initvx=0,initvy=0, friction=0.1, clipstrength=0.0001, static=False):
         super().__init__(spritedir, OnCreate, OnUpdate, x, y)
 
         if OnPhysic:
             self.onPhysicCall = types.MethodType(OnPhysic,self)
+        if OnCollide:
+            self.onCollide = types.MethodType(OnCollide,self)
 
         self.collide = collide
         self.gravity = vector(xgravity,ygravity)
@@ -60,26 +89,23 @@ class physicSprite(sprite):
 
     def onPhysicCall(self):
         return
+    
+    def onCollide(self,sprite):
+        return
 
     def physicCall(self):
-
-        self.onPhysicCall()
-
-        # Handle Collision with other physics objects
-        if self.collide:
-            self.collision()
 
         # Apply physics updates
         self.position += self.velocity
         self.velocity += self.gravity
-        self.velocity -= self.velocity * self.friction
+        self.velocity *= vector(1,1)-self.friction
 
         # Update hitbox position
         self.hitdetector.topleft = (self.position.x, self.position.y)
     
     def isColliding(self):
         objs = []
-        for obj in data.active_sprites:
+        for obj in sync.localdata.active_sprites:
             if (obj is self) or (not isinstance(obj, physicSprite)) or (not obj.collide):
                 continue
             
@@ -92,7 +118,7 @@ class physicSprite(sprite):
         if self.static: return
 
         collided = False
-        for obj in data.active_sprites:
+        for obj in sync.localdata.active_sprites:
 
             if obj is self or not isinstance(obj, physicSprite) or not obj.collide:
                 continue
@@ -117,14 +143,12 @@ class physicSprite(sprite):
                         self.position.x += px
                     else:
                         self.position.x -= px
-                    self.velocity.x = 0
                 else:
                     # Resolve vertically
                     if dy > 0:
                         self.position.y += py
                     else:
                         self.position.y -= py
-                    self.velocity.y = 0
             else:
                 if px < py:
                     self.velocity.x *= -1
@@ -135,11 +159,6 @@ class physicSprite(sprite):
 
             # Update hitbox position after resolution
             self.hitdetector.topleft = (self.position.x, self.position.y)
+            self.onCollide(obj)
 
         return collided
-
-
-class nil:
-    """A placeholder 'sprite' that replace a deleted sprite and only removed from the list when its the last sprite so other sprite's ID doesnt change"""
-    def update():
-        return

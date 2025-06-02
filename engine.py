@@ -14,7 +14,7 @@ class engine:
     clock:pygame.time.Clock
     running = False
     font_title:pygame.font.Font
-    
+    modlist = []
 
 
     def loop():
@@ -43,15 +43,14 @@ class engine:
 
         engine.running = True
 
-        game.begin()
+        game.begin(engine.modlist)
 
         engine.loop()
 
         return
     
     def render():
-        for rendersprite in game.active_sprites:
-            if rendersprite is nil: continue
+        for rendersprite in data.active_sprites:
 
             position = rendersprite.position-viewport.position+(viewport.size/vector(2,2))
 

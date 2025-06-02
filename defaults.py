@@ -25,7 +25,7 @@ class player(sprite):
 
 
 class physicPlayer(physicSprite):
-    def __init__(self, spritedir="Defaults/DefaultPlayer", OnCreate=None, OnUpdate=None, x=0, y=0, OnPhysic=None, collide=True, xgravity=0, ygravity=0, initvx=0, initvy=0, friction=0.5, clipstrength=0.1, static=False):
+    def __init__(self, spritedir="Defaults/DefaultPlayer", OnCreate=None, OnUpdate=None, x=0, y=0, OnPhysic=None, OnCollide=None, collide=True, xgravity=0, ygravity=0, initvx=0, initvy=0, friction=0.5, clipstrength=0.1, static=False):
 
         def movement(self:physicSprite):
             keypressed = pygame.key.get_pressed()
@@ -39,7 +39,7 @@ class physicPlayer(physicSprite):
                 if keypressed[pygame.K_s]:
                     self.velocity.y +=5
 
-        super().__init__(spritedir, OnCreate, OnUpdate, x, y, movement, collide, xgravity, ygravity, initvx, initvy, friction, clipstrength, static)
+        super().__init__(spritedir, OnCreate, movement, x, y, OnPhysic, OnCollide, collide, xgravity, ygravity, initvx, initvy, friction, clipstrength, static)
 
 class follower(sprite):
     """Basic Character that can be used for enemy characters but there is no health system in the base game"""

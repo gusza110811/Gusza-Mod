@@ -9,73 +9,113 @@ import defaults
 class commands:
     """Commands"""
     
-    def listsprites():
-        for idx, item in enumerate(game.active_sprites):
-            if item is nil: continue
+    def listSprites():
+        "List all sprites"
+        for idx, item in enumerate(data.active_sprites):
             print(f"{idx}: {type(item).__name__}")
+    
+    def id(name:sprite):
+        "Return ID of a sprite"
+        return data.active_sprites.index(sprite)
+    
+    def Sprite(id:int):
+        "Return a sprite from their ID"
+        return  data.active_sprites[id]
 
-    def summon(name):
+    def summon(name:sprite):
+        "Creat sprite {name}"
 
         print(f"{(type(name).__name__)} summoned at {name.position.x},{name.position.y}")
 
-        game.active_sprites.append(name)
+        data.active_sprites.append(name)
+
+        return name
     
-    def kill(spriteID):
-        spriteID = int(spriteID)
+    def spawn(name:sprite): "Equivalent to summon(name)"; return commands.summon(name)
+    
+    def kill(sprite:sprite):
+        "Remove a Sprite"
+        data.active_sprites.pop(commands.id(sprite))
+        print(f"Sprite {type(sprite).__name__} (ID: {commands.id(sprite)}) has been removed")
+    
+    def getTags(sprite:sprite):
+        for tag in sprite.tags:
+            print(f"> {tag}")
+        return sprite.tags
 
-        print(f"Sprite {type(game.active_sprites[spriteID]).__name__} (ID: {spriteID}) has been removed")
-        game.active_sprites[spriteID] = nil
+    def getAttributes(sprite:sprite):
+        for attr in sprite.attributes:
+            print(f"> {attr} = {sprite.attributes[attr]}")
+        return sprite.attributes
 
 
+
+class data:
+    active_sprites:list[sprite] = []
+    """Sprites currently on the level"""
+
+    physicupdate = 0.1
+    """Delay between each time physics function is called. 1 means physic updates once every frame"""
+
+    timetilphysic = physicupdate
+
+    cam:physicSprite
+    player:sprite
 
 class game:
     """Function and other things related to the main game"""
 
-    active_sprites:list[sprite] = []
-    """Sprites currently on the level"""
-
-    physicupdate = 0
-    """Delay between each time physics function is called. 0 means physic updates every frame"""
-
-    timetilphysic = physicupdate
-
     def update(viewport:int,events:list[pygame.event.Event]):
-
-        for item in game.active_sprites:
+        for item in data.active_sprites:
             currentsprite = item
-
             currentsprite.update()
-        data.active_sprites = game.active_sprites
         
-        if len(game.active_sprites) != 0:
-            while game.active_sprites[-1] is nil:
-                game.active_sprites.pop()
-        
-        if game.timetilphysic <= 0:
-            game.callphysic()
-            game.timetilphysic = game.physicupdate
+        if data.timetilphysic < 1:
+            for _ in range(int(1/(data.physicupdate % 1))):
+                game.callphysic()
+            data.timetilphysic = data.physicupdate
         else:
-            game.timetilphysic -= 1
+            data.timetilphysic -= 1
 
-        return viewport
+        return data.cam.position + vector(32,32)
     
     def callphysic():
-        physicqueue:list[physicSprite] = filter(lambda a: issubclass(type(a),physicSprite),game.active_sprites)
-        
-        for physicobject in physicqueue:
+        for physicobject in data.active_sprites:
+            if not isinstance(physicobject,physicSprite): continue
+
+            physicobject.onPhysicCall()
             physicobject.physicCall()
+        
+        for physicobject in data.active_sprites:
+            if not isinstance(physicobject,physicSprite):
+                continue
+            if not physicobject.collide:
+                continue
+
+            physicobject.collision()
+
 
         return
 
-    def begin():
-        commands.summon(defaults.physicPlayer())
+    def begin(modlist:list[str]):
 
-        commands.summon(physicSprite(x=0,y=100,initvx=1,friction=0))
-        commands.summon(physicSprite(x=-100,y=100,friction=0,static=True))
-        commands.summon(physicSprite(x=100,y=100,friction=0,static=True))
+        sync.sync(data)
 
-        commands.summon(physicSprite(x=0,y=-100,initvx=1,friction=0))
-        commands.summon(physicSprite(x=-100,y=-100,friction=0,static=True))
-        commands.summon(physicSprite(x=100,y=-100,friction=0,static=True))
+        data.cam = commands.summon(physicSprite(spritedir="Defaults/Cam.png",friction=1))
+
+        commands.summon(physicSprite(x=0,y=150,initvx=1,friction=0))
+        commands.summon(physicSprite(x=-100,y=150,friction=0,static=True))
+        commands.summon(physicSprite(x=100,y=150,friction=0,static=True))
+
+        commands.summon(physicSprite(x=0,y=-150,friction=1))
+        commands.summon(physicSprite(x=-100,y=-150,friction=1))
+        commands.summon(physicSprite(x=100,y=-150,friction=1))
+
+        data.player = commands.summon(defaults.physicPlayer())
+        data.player.addTag("player")
+        data.player.setAttribute("health",100)
+
+        commands.getTags(data.player)
+        commands.getAttributes(data.player)
 
         return
