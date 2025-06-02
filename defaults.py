@@ -4,8 +4,6 @@ import pygame
 import random
 
 from sprite import *
-class data:
-    active_sprites = []
 
 class player(sprite):
     def __init__(self, spritedir="Defaults/DefaultPlayer", OnCreate=None, OnUpdate=None, x=0, y=0):
@@ -44,12 +42,12 @@ class physicPlayer(physicSprite):
 class follower(sprite):
     """Basic Character that can be used for enemy characters but there is no health system in the base game"""
     def __init__(self, spritedir = "Defaults/MissingTexture", OnCreate=None, x = 0, y = 0):
-        super().__init__(spritedir, OnCreate, x, y)
-
+        super().__init__(spritedir, OnCreate, None, x, y)
+    
     def update(self):
 
         try:
-            Player = next(filter(lambda a: (type(a) is physicPlayer) or (type(a) is player),data.active_sprites))
+            Player = next(filter(lambda a: (type(a) is physicPlayer) or (type(a) is player),sync.localdata.active_sprites))
         except StopIteration:
             return
         

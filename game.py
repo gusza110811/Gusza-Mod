@@ -1,10 +1,24 @@
 import pygame
-import types
-import random
+import os
+import importlib
 
 from sprite import *
 from vector import *
 import defaults
+
+class data:
+    active_sprites:list[sprite] = []
+    """Sprites currently on the level"""
+
+    physicupdate = 0.1
+    """Delay between each time physics function is called. 1 means physic updates once every frame"""
+
+    timetilphysic = physicupdate
+
+    cam:physicSprite
+    player:sprite
+
+    loadedMods = []
 
 class commands:
     """Commands"""
@@ -48,19 +62,26 @@ class commands:
             print(f"> {attr} = {sprite.attributes[attr]}")
         return sprite.attributes
 
+class modLoader:
+    "Load and run mods, shocking right"
+    def load():
+        mods = os.listdir("Mods")
 
+        for moddir in mods:
+            mod = importlib.import_module(f"Mods.{moddir}.mod")
+            mod.Mod.onLoad(data=data,sprite=sprite,defaults=defaults,commands=commands)
 
-class data:
-    active_sprites:list[sprite] = []
-    """Sprites currently on the level"""
+            try:
+                exec("mod.Mod.onUpdate()")
+                data.loadedMods.append(mod)
+            except NameError:
+                pass
 
-    physicupdate = 0.1
-    """Delay between each time physics function is called. 1 means physic updates once every frame"""
-
-    timetilphysic = physicupdate
-
-    cam:physicSprite
-    player:sprite
+        return
+    
+    def modUpdate():
+        for mod in data.loadedMods:
+            mod.Mod.onUpdate()
 
 class game:
     """Function and other things related to the main game"""
@@ -76,6 +97,8 @@ class game:
             data.timetilphysic = data.physicupdate
         else:
             data.timetilphysic -= 1
+        
+        modLoader.modUpdate()
 
         return data.cam.position + vector(32,32)
     
@@ -98,6 +121,8 @@ class game:
         return
 
     def begin(modlist:list[str]):
+
+        modLoader.load()
 
         sync.sync(data)
 
