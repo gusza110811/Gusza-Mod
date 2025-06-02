@@ -69,19 +69,25 @@ class modLoader:
 
         for moddir in mods:
             mod = importlib.import_module(f"Mods.{moddir}.mod")
+            print(f"\n\n< Output of {mod.__name__} >\n")
             mod.Mod.onLoad(data=data,sprite=sprite,defaults=defaults,commands=commands)
+            print(f"\n^ Output of {mod.__name__} ^\n\n")
 
             try:
                 exec("mod.Mod.onUpdate()")
                 data.loadedMods.append(mod)
             except NameError:
                 pass
+            except AttributeError:
+                pass
 
         return
     
     def modUpdate():
         for mod in data.loadedMods:
+            print(f"< Output of {mod.__name__} >")
             mod.Mod.onUpdate()
+            print(f"^ Output of {mod.__name__} ^")
 
 class game:
     """Function and other things related to the main game"""

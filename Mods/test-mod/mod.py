@@ -12,7 +12,3 @@ class Mod:
         print("Mod has been loaded")
 
         load.command.summon(load.defaults.follower(x=150,y=0))
-
-    def onUpdate():
-
-        return
