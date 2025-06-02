@@ -37,7 +37,7 @@ class commands:
         return  data.active_sprites[id]
 
     def summon(name:sprite):
-        "Creat sprite {name}"
+        "Create sprite {name}"
 
         print(f"{(type(name).__name__)} summoned at {name.position.x},{name.position.y}")
 
