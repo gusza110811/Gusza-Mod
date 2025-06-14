@@ -1,4 +1,4 @@
-A moddable video game
+A Game Engine
 Copyright (C) 2025  Sarunphat "Gusza" Nimsuntorn
 
 This program is free software: you can redistribute it and/or modify

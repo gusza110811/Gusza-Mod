@@ -3,6 +3,7 @@ import os
 import importlib
 
 from sprite import *
+import sprite as spriteall
 from vector import *
 import defaults
 
@@ -62,19 +63,22 @@ class commands:
             print(f"> {attr} = {sprite.attributes[attr]}")
         return sprite.attributes
 
+# note from the dev, 2 months later: The game was supposed to be a moddable game but its mostly just a game engine here. too hard to change the namings though, everything is too rock solid
 class modLoader:
     "Load and run mods, shocking right"
-    def load():
-        mods = os.listdir("Mods")
+    @staticmethod
+    def load(mods:list=None):
+        if not mods:
+            mods = os.listdir("Mods")
 
         for moddir in mods:
-            mod = importlib.import_module(f"Mods.{moddir}.mod")
-            print(f"\n\n< Output of {mod.__name__} >\n")
-            mod.Mod.onLoad(data=data,sprite=sprite,defaults=defaults,commands=commands)
-            print(f"\n^ Output of {mod.__name__} ^\n\n")
+            mod = importlib.import_module(f"Mods.{moddir}.main")
+            print(f"\n< Output of {mod.__name__} >\n")
+            mod.Main.onLoad(data=data,sprite=spriteall,defaults=defaults,commands=commands)
+            print(f"\n^ Output of {mod.__name__} ^\n")
 
             try:
-                exec("mod.Mod.onUpdate()")
+                exec("mod.Main.onUpdate()")
                 data.loadedMods.append(mod)
             except NameError:
                 pass
@@ -90,7 +94,7 @@ class modLoader:
             print(f"^ Output of {mod.__name__} ^")
 
 class game:
-    """Function and other things related to the main game"""
+    """Function and other things related(?) to the main game"""
 
     def update(viewport:int,events:list[pygame.event.Event]):
         for item in data.active_sprites:
@@ -128,25 +132,8 @@ class game:
 
     def begin(modlist:list[str]):
 
-        modLoader.load()
+        modLoader.load(modlist)
 
         sync.sync(data)
-
-        data.cam = commands.summon(physicSprite(spritedir="Defaults/Cam.png",friction=1))
-
-        commands.summon(physicSprite(x=0,y=150,initvx=1,friction=0))
-        commands.summon(physicSprite(x=-100,y=150,friction=0,static=True))
-        commands.summon(physicSprite(x=100,y=150,friction=0,static=True))
-
-        commands.summon(physicSprite(x=0,y=-150,friction=1))
-        commands.summon(physicSprite(x=-100,y=-150,friction=1))
-        commands.summon(physicSprite(x=100,y=-150,friction=1))
-
-        data.player = commands.summon(defaults.physicPlayer())
-        data.player.addTag("player")
-        data.player.setAttribute("health",100)
-
-        commands.getTags(data.player)
-        commands.getAttributes(data.player)
 
         return
