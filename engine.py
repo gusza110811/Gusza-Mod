@@ -65,6 +65,8 @@ class menu:
         engine.clock = pygame.time.Clock()
         engine.font_title = pygame.font.Font(size=64)
 
+        game.begin(engine.modlist)
+
         while 1:
             if menu.page == page.EXIT:
                 pygame.quit()
@@ -101,6 +103,12 @@ class engine:
             for event in events:
                 if event.type == pygame.QUIT:
                     engine.running = False
+                    menu.page = page.EXIT
+                if event.type == pygame.KEYDOWN:
+                    keypresses = pygame.key.get_pressed()
+                    if keypresses[pygame.K_ESCAPE]:
+                        engine.running= False
+                        menu.page = page.MENU
             
             viewport.position = game.update(viewport.position,events)
 
@@ -113,11 +121,7 @@ class engine:
         pygame.display.set_caption("Game")
         engine.running = True
 
-        game.begin(engine.modlist)
-
         engine.loop()
-
-        menu.page = page.EXIT
 
         return
     
